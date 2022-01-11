@@ -1,9 +1,9 @@
-async function main() {
-
-    let magnitude_factor = 3;
+async function main() 
+{
+    const featureCollection = [];
 
     // Creating the map object
-    const myMap = L.map("map", {
+    const map = L.map("map", {
       center: [40.7, -73.95],
       zoom: 5
     });
@@ -11,21 +11,18 @@ async function main() {
     // Adding the tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(myMap);
+    }).addTo(map);
   
     // Store the API query variables.
     // For docs, refer to https://dev.socrata.com/docs/queries/where.html.
     // And, refer to https://dev.socrata.com/foundry/data.cityofnewyork.us/erm2-nwe9.
+    //https://geospatialresponse.wordpress.com/2015/07/26/leaflet-geojson-pointtolayer/
+
     const url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"
 
-    
-    // Get the data 
     const response =  await fetch(url);
     const data = await response.json();
     
-    // Create a new marker cluster group.
-    const markers = L.markerClusterGroup();
-
     console.log(data.features.length);
 
     function getFillColorByGivenDepth(earthquake_depth) 
@@ -39,52 +36,100 @@ async function main() {
         let light_brown        = "#ffbf80"; //70-90
         let light_red          = "#ff9980"; //90+
 
-        if(earthquake_depth <= 10)
+        if(earthquake_depth < -10)
             result = lime_green;
-        else if(earthquake_depth >= -10 && earthquake_depth <= 30)
+        else if(earthquake_depth >= -10 && earthquake_depth < 30)
             result = light_green_yellow;
-        else if(earthquake_depth > 30 && earthquake_depth <= 50)
+        else if(earthquake_depth >= 30 && earthquake_depth < 50)
             result = light_orange;
-        else if(earthquake_depth > 50 && earthquake_depth <= 70)
+        else if(earthquake_depth >= 50 && earthquake_depth < 70)
             result = orange;
-        else if(earthquake_depth > 70 && earthquake_depth <= 90)
+        else if(earthquake_depth >= 70 && earthquake_depth < 90)
             result = light_brown;  
         else
-              result = light_red;  
+            result = light_red;  
 
         return result;
     }
 
-    for (let i = 0; i < data.features.length; i++) 
+    function buildGeoJsonByFeature(longitude,
+                                   latitude,
+                                   magnitude,
+                                   depth,
+                                   location,
+                                   idx)
     {
-        let feature     = data.features[i];
+        let geoJson          = {};
+        let feature_dict     = {};
+        let properties_dict  = {};
+        let geometry_dict    = {};
+        let coordinates_dict = {};
+
+        feature_dict['type'] = "Feature";
+        feature_dict['id']   = idx;
+
+        coordinates_dict["type"] = "Point";
+        coordinates_dict["coordinates"] = [longitude,latitude];
+
+        //geometry_dict["geometry"] = coordinates_dict;
+
+        properties_dict["Magnitude"] = magnitude;
+        properties_dict["Location"]  = location;   
+        properties_dict["Depth"]     = depth;    
+     
+        feature_dict['properties'] = properties_dict;
+        feature_dict['geometry']   = coordinates_dict;     
+
+        geoJson['type'] = "FeatureCollection";
+        geoJson['features'] = [feature_dict];
+
+        console.log(JSON.stringify(geoJson));
+        //break;
+
+        return geoJson;
+    }
+
+    for (let idx = 0; idx < data.features.length; idx++)
+    {
+        let feature     = data.features[idx];
         let coordinates = feature.geometry.coordinates;
-        let magnitude   =  feature.properties.mag;
+        let magnitude   = feature.properties.mag;
+        let location    = feature.properties.place;
         
         let longitude = coordinates[0];
         let latitude  = coordinates[1];
         let depth     = coordinates[2];
 
-        console.log(magnitude);
+        let geoJson = buildGeoJsonByFeature(longitude,
+                                            latitude,
+                                            magnitude,
+                                            depth,
+                                            location,
+                                            idx);
 
-        let circle_fill_color = getFillColorByGivenDepth(depth);
-        let earthquakeRadius  = magnitude_factor * magnitude;
+        let geojsonLayer = L.geoJson(geoJson, {
+                                                    style: function(feature) 
+                                                    {
+                                                        return 
+                                                        {
+                                                            color: "green"
+                                                        };
+                                                    },
+                                                    pointToLayer: function(feature, latlng) 
+                                                    {
+                                                        return new L.CircleMarker(latlng, {
+                                                                                            radius: 10, 
+                                                                                            fillOpacity: 0.85
+                                                                                          });
+                                                    },
+                                                    onEachFeature: function (feature, layer) 
+                                                    {
+                                                        layer.bindPopup(feature.properties.Magnitude);
+                                                    }
+                                            });
+        map.addLayer(geojsonLayer);
 
-        let coord_marker = L.circleMarker([latitude, longitude], {
-                                                                    color: "black",
-                                                                    fillColor: circle_fill_color,
-                                                                    fillOpacity: 0.5,
-                                                                    radius: earthquakeRadius * 10
-                                                                });
 
-         markers.addLayer(coord_marker);
-
-     }
-  
-    // Add our marker cluster layer to the map.
-    myMap.addLayer(markers);
-  
-  }
-  
-  main();
-  
+    }
+}
+main();
