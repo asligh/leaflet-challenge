@@ -29,22 +29,22 @@ async function main()
     {
         result = '';
         
-        let lime_green         = "#0CE549"; //-10-10
+        let lime_green         = "#00FF00"; //-10-10
         let light_green_yellow = "#C7E50C"; //10-30
         let light_orange       = "#E5C20C"; //30-50
         let orange             = "#E5900C"; //50-70
         let light_brown        = "#E56B0C"; //70-90
-        let red          = "#E5150C"; //90+
+        let red                = "#FF0000"; //90+
 
-        if(earthquake_depth < -10)
+        if(earthquake_depth <= 10)
             result = lime_green;
-        else if(earthquake_depth >= -10 && earthquake_depth < 30)
+        else if(earthquake_depth <= 30)
             result = light_green_yellow;
-        else if(earthquake_depth >= 30 && earthquake_depth < 50)
+        else if(earthquake_depth <= 50)
             result = light_orange;
-        else if(earthquake_depth >= 50 && earthquake_depth < 70)
+        else if(earthquake_depth <= 70)
             result = orange;
-        else if(earthquake_depth >= 70 && earthquake_depth < 90)
+        else if(earthquake_depth <= 90)
             result = light_brown;  
         else
             result = red;  
@@ -117,7 +117,7 @@ async function main()
                                                 return new L.CircleMarker(latlng, 
                                                                                 {
                                                                                     radius: feature.properties.Magnitude * 4, 
-                                                                                    fillOpacity: 1.5,
+                                                                                    fillOpacity: 100,
                                                                                     color: '#000000',
                                                                                     weight: .25,
                                                                                 });
@@ -127,12 +127,34 @@ async function main()
                                                 layer.bindPopup("Location: "  + feature.properties.Location  + "<br>" + 
                                                                 "Magnitude: " + feature.properties.Magnitude + "<br>" + 
                                                                 "Depth: "     + feature.properties.Depth);
-                                                                
+
                                                 layer.setStyle({fillColor : getFillColorByGivenDepth(feature.properties.Depth)}) 
                                             }
                                         });
 
     map.addLayer(geojsonLayer);
 
+
+     //Source for legend: https://www.igismap.com/legend-in-leafletjs-map-with-topojson/                                   
+    
+    let legend = L.control({position: 'bottomright'});
+
+    legend.onAdd = function (map) 
+    {
+        let div    = L.DomUtil.create('div', 'info legend');
+        let labels = ['<strong>Categories</strong>'];
+        let categories = ['-10-10','10-30','30-50','50-70','70-90','90+'];
+        let depths = [-10, 15, 40, 60, 80, 100];
+        
+        for (var i = 0; i < categories.length; i++) 
+        {
+            div.innerHTML += labels.push('<i class="circle" style="background:' + getFillColorByGivenDepth(depths[i]) + '"></i> ' + (categories[i] ? categories[i] : '+'));
+        }
+        div.innerHTML = labels.join('<br>');
+        
+        return div;
+    };
+
+    legend.addTo(map);
 }
 main();
