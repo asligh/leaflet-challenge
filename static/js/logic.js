@@ -52,17 +52,15 @@ async function main()
         return result;
     }
 
-    function buildGeoJsonByFeature(longitude,
-                                   latitude,
-                                   magnitude,
-                                   depth,
-                                   location,
-                                   idx)
+    function buildGeoJsonFeature(longitude,
+                                 latitude,
+                                 magnitude,
+                                 depth,
+                                 location,
+                                 idx)
     {
-        let geoJson          = {};
         let feature_dict     = {};
         let properties_dict  = {};
-        let geometry_dict    = {};
         let coordinates_dict = {};
 
         feature_dict['type'] = "Feature";
@@ -71,8 +69,6 @@ async function main()
         coordinates_dict["type"] = "Point";
         coordinates_dict["coordinates"] = [longitude,latitude];
 
-        //geometry_dict["geometry"] = coordinates_dict;
-
         properties_dict["Magnitude"] = magnitude;
         properties_dict["Location"]  = location;   
         properties_dict["Depth"]     = depth;    
@@ -80,14 +76,13 @@ async function main()
         feature_dict['properties'] = properties_dict;
         feature_dict['geometry']   = coordinates_dict;     
 
-        geoJson['type'] = "FeatureCollection";
-        geoJson['features'] = [feature_dict];
+        return feature_dict;
 
-        console.log(JSON.stringify(geoJson));
-        //break;
-
-        return geoJson;
+        //{ "type": "Feature", "id": 0, "properties": { "NAME": "Duluth Entertainment Convention Center (DECC)" }, "geometry": { "type": "Point", "coordinates": [ –92.097675, 46.781194 ] } }       
     }
+
+    let geoJsonFeatures = [];
+    let geoJson = {};
 
     for (let idx = 0; idx < data.features.length; idx++)
     {
@@ -100,36 +95,44 @@ async function main()
         let latitude  = coordinates[1];
         let depth     = coordinates[2];
 
-        let geoJson = buildGeoJsonByFeature(longitude,
-                                            latitude,
-                                            magnitude,
-                                            depth,
-                                            location,
-                                            idx);
+        let geoJsonFeature = buildGeoJsonFeature(longitude,
+                                                 latitude,
+                                                 magnitude,
+                                                 depth,
+                                                 location,
+                                                 idx);
 
-        let geojsonLayer = L.geoJson(geoJson, {
-                                                    style: function(feature) 
-                                                    {
-                                                        return 
-                                                        {
-                                                            color: "green"
-                                                        };
-                                                    },
-                                                    pointToLayer: function(feature, latlng) 
-                                                    {
-                                                        return new L.CircleMarker(latlng, {
-                                                                                            radius: 10, 
-                                                                                            fillOpacity: 0.85
-                                                                                          });
-                                                    },
-                                                    onEachFeature: function (feature, layer) 
-                                                    {
-                                                        layer.bindPopup(feature.properties.Magnitude);
-                                                    }
-                                            });
-        map.addLayer(geojsonLayer);
-
-
+        geoJsonFeatures.push(geoJsonFeature);  
+                                   
     }
+
+    geoJson['type'] = "FeatureCollection";
+    geoJson['features'] = geoJsonFeatures;  
+
+    console.log(JSON.stringify(geoJson));   
+
+    let geojsonLayer = L.geoJson(geoJsonFeatures, {
+                                            style: function(feature) 
+                                            {
+                                                return 
+                                                {
+                                                    color: "green"
+                                                };
+                                            },
+                                            pointToLayer: function(feature, latlng) 
+                                            {
+                                                return new L.CircleMarker(latlng, {
+                                                                                    radius: 10, 
+                                                                                    fillOpacity: 0.85
+                                                                                });
+                                            },
+                                            onEachFeature: function (feature, layer) 
+                                            {
+                                                layer.bindPopup(feature.properties.Magnitude);
+                                            }
+                                        });
+
+    map.addLayer(geojsonLayer);
+
 }
 main();
