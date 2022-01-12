@@ -4,7 +4,7 @@ async function main()
 
     // Creating the map object
     const map = L.map("map", {
-      center: [40.7, -73.95],
+      center: [37.0902, -95.7129],
       zoom: 5
     });
   
