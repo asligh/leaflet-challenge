@@ -29,12 +29,12 @@ async function main()
     {
         result = '';
         
-        let lime_green         = "#aaff80"; //-10-10
-        let light_green_yellow = "#d5ff80"; //10-30
-        let light_orange       = "#ffcc66"; //30-50
-        let orange             = "#ff9900"; //50-70
-        let light_brown        = "#ffbf80"; //70-90
-        let light_red          = "#ff9980"; //90+
+        let lime_green         = "#0CE549"; //-10-10
+        let light_green_yellow = "#C7E50C"; //10-30
+        let light_orange       = "#E5C20C"; //30-50
+        let orange             = "#E5900C"; //50-70
+        let light_brown        = "#E56B0C"; //70-90
+        let red          = "#E5150C"; //90+
 
         if(earthquake_depth < -10)
             result = lime_green;
@@ -47,7 +47,7 @@ async function main()
         else if(earthquake_depth >= 70 && earthquake_depth < 90)
             result = light_brown;  
         else
-            result = light_red;  
+            result = red;  
 
         return result;
     }
@@ -109,26 +109,26 @@ async function main()
     geoJson['type'] = "FeatureCollection";
     geoJson['features'] = geoJsonFeatures;  
 
-    console.log(JSON.stringify(geoJson));   
+    //console.log(JSON.stringify(geoJson));   
 
-    let geojsonLayer = L.geoJson(geoJsonFeatures, {
-                                            style: function(feature) 
-                                            {
-                                                return 
-                                                {
-                                                    color: "green"
-                                                };
-                                            },
+    let geojsonLayer = L.geoJson(geoJson, {
                                             pointToLayer: function(feature, latlng) 
                                             {
-                                                return new L.CircleMarker(latlng, {
-                                                                                    radius: 10, 
-                                                                                    fillOpacity: 0.85
+                                                return new L.CircleMarker(latlng, 
+                                                                                {
+                                                                                    radius: feature.properties.Magnitude * 4, 
+                                                                                    fillOpacity: 1.5,
+                                                                                    color: '#000000',
+                                                                                    weight: .25,
                                                                                 });
                                             },
                                             onEachFeature: function (feature, layer) 
                                             {
-                                                layer.bindPopup(feature.properties.Magnitude);
+                                                layer.bindPopup("Location: "  + feature.properties.Location  + "<br>" + 
+                                                                "Magnitude: " + feature.properties.Magnitude + "<br>" + 
+                                                                "Depth: "     + feature.properties.Depth);
+                                                                
+                                                layer.setStyle({fillColor : getFillColorByGivenDepth(feature.properties.Depth)}) 
                                             }
                                         });
 
